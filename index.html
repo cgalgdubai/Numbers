@@ -72,7 +72,7 @@ function checkNumber() {
     // Strips leading zeros safely (e.g., 00123 -> 123, 000 -> 0)
     let cleanedInput = userInput.replace(/^0+/, "") || "0";
     
-    if (numberDatabase.includes(cleanedInput)) {
+if (numberDatabase.includes(cleanedInput)) {
         resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b>: Document ready for collection at our services.<span class='arabic-text'>الوثيقة البيومترية جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("success");
     } else {
@@ -80,7 +80,6 @@ function checkNumber() {
         resultDiv.innerHTML = "✗ Not Found <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("fail");
     }
-}
 </script>
 
 </body>
