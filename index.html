@@ -1,86 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Number Verifier</title>
-    <style>
-        body { margin: 0; font-family: Arial, sans-serif; background-color: transparent; }
-        .search-container {
-            max-width: 100%;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            box-sizing: border-box;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover { background-color: #0056b3; }
-        .result-message { margin-top: 15px; padding: 12px; border-radius: 4px; font-size: 14px; display: none; line-height: 1.5; }
-        .result-message.success { display: block; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .result-message.fail { display: block; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .result-message.error { display: block; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .arabic-text { display: block; direction: rtl; text-align: right; margin-top: 5px; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<div class="search-container">
-    <input type="text" id="numberInput" placeholder="e.g., 0012344 or 12344" autocomplete="off">
-    <button onclick="checkNumber()">Verify Number</button>
-    <div id="resultMessage" class="result-message"></div>
-</div>
-
-<script>
-// --- THE DATABASE ---
-// Your .bat file will automatically overwrite this specific array line.
-const numberDatabase = ["12344","12345","55678"];
-
 function checkNumber() {
+    // 1. Get value, trim spaces, and convert Arabic/Eastern numbers to Western numbers
     let userInput = document.getElementById("numberInput").value.trim();
+    
+    // Convert Arabic numerals (٠١٢٣٤٥٦٧٨٩) if typed on an Arabic mobile keyboard
+    userInput = userInput.replace(/[٠-٩]/g, function (d) {
+        return d.charCodeAt(0) - 1632;
+    });
+
     let resultDiv = document.getElementById("resultMessage");
     
     resultDiv.innerHTML = "";
     resultDiv.className = "result-message";
     
     if (userInput === "") {
-        resultDiv.innerHTML = "Please enter a number.";
+        resultDiv.innerHTML = "Please enter a number. / الرجاء إدخال الرقم";
         resultDiv.classList.add("error");
         return;
     }
     
-    // Strips leading zeros safely (e.g., 00123 -> 123, 000 -> 0)
-    let cleanedInput = userInput.replace(/^0+/, "") || "0";
+    // 2. Strips all non-numeric characters (just in case) and removes leading zeros safely
+    let cleanedInput = userInput.replace(/\D/g, '').replace(/^0+/, "") || "0";
     
-if (numberDatabase.includes(cleanedInput)) {
+    if (numberDatabase.includes(cleanedInput)) {
         resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b>: Document ready for collection at our services.<span class='arabic-text'>الوثيقة البيومترية جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("success");
     } else {
-        // Updated failure message with both English and Arabic translations
         resultDiv.innerHTML = "✗ Not Found <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("fail");
     }
-</script>
-
-</body>
-</html>
+}
