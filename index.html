@@ -64,24 +64,15 @@
 </div>
 
 <script>
-// --- THE DATABASE ---
-// Your .bat file must overwrite this section using the object format { "number": "name" }
-const numberDatabase = {
-    "12345": "tarek",
-    "123456": "Tarek6",
-    "001": "tarek1"
-};
-
-function checkNumber() {
+async function checkNumber() {
     let userInput = document.getElementById("numberInput").value.trim();
     
-    // Convert Arabic numerals (٠١٢٣٤٥٦٧٨٩) if typed on an Arabic mobile keyboard
+    // Convert Arabic numerals (٠١٢٣٤٥٦٧٨٩)
     userInput = userInput.replace(/[٠-٩]/g, function (d) {
         return d.charCodeAt(0) - 1632;
     });
 
     let resultDiv = document.getElementById("resultMessage");
-    
     resultDiv.innerHTML = "";
     resultDiv.className = "result-message";
     
@@ -91,21 +82,44 @@ function checkNumber() {
         return;
     }
     
-    // Strips non-numeric text and removes leading zeros safely
-    let cleanedInput = userInput.replace(/\D/g, '').replace(/^0+/, "") || "0";
+    // Kept only \D to strip non-numeric text, but REMOVED leading zeros deletion
+    let cleanedInput = userInput.replace(/\D/g, '');
     
-    // Check if the cleaned number exists as a key in our database object
-    if (cleanedInput in numberDatabase) {
-        // Retrieve the name associated with this number
-        let personName = numberDatabase[cleanedInput];
+    try {
+        // Fetch the TXT file directly from your GitHub directory
+        const response = await fetch('database.txt?t=' + new Date().getTime());
+        if (!response.ok) throw new Error("Could not load database file.");
         
-        // Success message showing the user's name
-        resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b> (<span class='name-highlight'>" + personName + "</span>): Document ready for collection at our services.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + personName + "</span>) جاهزة لدى المصالح القنصلية</span>";
-        resultDiv.classList.add("success");
-    } else {
-        // Failure message
-        resultDiv.innerHTML = "✗ Not Found <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
-        resultDiv.classList.add("fail");
+        const textData = await response.text();
+        
+        const numberDatabase = {};
+        const lines = textData.split('\n');
+        
+        lines.forEach(line => {
+            if(line.includes('=')) {
+                let parts = line.split('=');
+                let num = parts[0].trim(); // Leading zeros are kept exactly as typed in the file
+                let name = parts[1].trim();
+                if(num) {
+                    numberDatabase[num] = name;
+                }
+            }
+        });
+
+        // Exact match comparison (including zeros)
+        if (cleanedInput in numberDatabase) {
+            let personName = numberDatabase[cleanedInput];
+            resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b> (<span class='name-highlight'>" + personName + "</span>): Document ready for collection.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + personName + "</span>) جاهزة لدى المصالح القنصلية</span>";
+            resultDiv.classList.add("success");
+        } else {
+            resultDiv.innerHTML = "✗ Not Found <b>" + userInput + "</b>: Document not available.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
+            resultDiv.classList.add("fail");
+        }
+
+    } catch (error) {
+        resultDiv.innerHTML = "Error connecting to the database. Please try again later.";
+        resultDiv.classList.add("error");
+        console.error(error);
     }
 }
 </script>
