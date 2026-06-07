@@ -36,10 +36,11 @@
             font-weight: bold;
         }
         button:hover { background-color: #0056b3; }
-        .result-message { margin-top: 15px; padding: 12px; border-radius: 4px; font-size: 14px; display: none; }
+        .result-message { margin-top: 15px; padding: 12px; border-radius: 4px; font-size: 14px; display: none; line-height: 1.5; }
         .result-message.success { display: block; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .result-message.fail { display: block; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .result-message.error { display: block; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .arabic-text { display: block; direction: rtl; text-align: right; margin-top: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -68,14 +69,15 @@ function checkNumber() {
         return;
     }
     
-    // Strips leading zeros so 0012344 becomes 12344
-    let cleanedInput = userInput.replace(/^0+/, "");
+    // Strips leading zeros safely (e.g., 00123 -> 123, 000 -> 0)
+    let cleanedInput = userInput.replace(/^0+/, "") || "0";
     
     if (numberDatabase.includes(cleanedInput)) {
         resultDiv.innerHTML = "✓ Match Found! The number <b>" + userInput + "</b> exists.";
         resultDiv.classList.add("success");
     } else {
-        resultDiv.innerHTML = "✗ No Match Found for <b>" + userInput + "</b>.";
+        // Updated failure message with both English and Arabic translations
+        resultDiv.innerHTML = "✗ No Match Found for <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("fail");
     }
 }
