@@ -77,7 +77,7 @@ function checkNumber() {
         resultDiv.classList.add("success");
     } else {
         // Updated failure message with both English and Arabic translations
-        resultDiv.innerHTML = "✗ No Match Found for <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
+        resultDiv.innerHTML = "✗ <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("fail");
     }
 }
