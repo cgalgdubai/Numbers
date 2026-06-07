@@ -51,6 +51,7 @@
         .result-message.fail { display: block; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .result-message.error { display: block; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .arabic-text { display: block; direction: rtl; text-align: right; margin-top: 5px; font-weight: bold; }
+        .name-highlight { font-weight: bold; color: #0b511b; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -64,8 +65,12 @@
 
 <script>
 // --- THE DATABASE ---
-// Your .bat file will automatically overwrite this specific array line.
-const numberDatabase = ["12344","12345","55678"];
+// Your .bat file must overwrite this section using the object format { "number": "name" }
+const numberDatabase = {
+    "12345": "tarek",
+    "123456": "Tarek6",
+    "001": "tarek1"
+};
 
 function checkNumber() {
     let userInput = document.getElementById("numberInput").value.trim();
@@ -89,10 +94,16 @@ function checkNumber() {
     // Strips non-numeric text and removes leading zeros safely
     let cleanedInput = userInput.replace(/\D/g, '').replace(/^0+/, "") || "0";
     
-    if (numberDatabase.includes(cleanedInput)) {
-        resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b>: Document ready for collection at our services.<span class='arabic-text'>الوثيقة البيومترية جاهزة لدى المصالح القنصلية</span>";
+    // Check if the cleaned number exists as a key in our database object
+    if (cleanedInput in numberDatabase) {
+        // Retrieve the name associated with this number
+        let personName = numberDatabase[cleanedInput];
+        
+        // Success message showing the user's name
+        resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b> (<span class='name-highlight'>" + personName + "</span>): Document ready for collection at our services.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + personName + "</span>) جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("success");
     } else {
+        // Failure message
         resultDiv.innerHTML = "✗ Not Found <b>" + userInput + "</b>: Document not available at our services.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
         resultDiv.classList.add("fail");
     }
