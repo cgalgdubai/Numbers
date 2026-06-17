@@ -59,7 +59,6 @@
         .result-message.fail { display: block; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .result-message.error { display: block; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .arabic-text { display: block; direction: rtl; text-align: right; margin-top: 5px; font-weight: bold; }
-        .name-highlight { font-weight: bold; color: #0b511b; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -68,7 +67,7 @@
     <h2>Biometric Passport Tracking</h2>
     
     <label for="lastNameInput">Last Name / اللقب</label>
-    <input type="text" id="lastNameInput" placeholder="e.g., aaaa" autocomplete="off">
+    <input type="text" id="lastNameInput" placeholder="e.g., AAAAAA" autocomplete="off">
 
     <label for="trackingInput">Tracking Number / رقم التسجيل</label>
     <input type="text" id="trackingInput" placeholder="e.g., 23012026" autocomplete="off">
@@ -81,7 +80,6 @@
 </div>
 
 <script>
-// Helper function to convert Arabic numerals and strip non-digits
 function cleanNumericInput(inputVal) {
     let converted = inputVal.replace(/[٠-٩]/g, function (d) {
         return d.charCodeAt(0) - 1632;
@@ -91,8 +89,6 @@ function cleanNumericInput(inputVal) {
 
 async function checkDocument() {
     let lastName = document.getElementById("lastNameInput").value.trim().toUpperCase();
-    
-    // Clean numeric inputs and REMOVE leading zeros from the user's tracking input
     let trackingNum = cleanNumericInput(document.getElementById("trackingInput").value.trim()).replace(/^0+/, '');
     let dob = cleanNumericInput(document.getElementById("dobInput").value.trim());
 
@@ -100,7 +96,6 @@ async function checkDocument() {
     resultDiv.innerHTML = "";
     resultDiv.className = "result-message";
     
-    // --- VALIDATION LOGIC ---
     if (!trackingNum && !dob) {
         resultDiv.innerHTML = "Please enter either a Tracking Number or Date of Birth.<br>الرجاء إدخال إما رقم التسجيل أو تاريخ الميلاد.";
         resultDiv.classList.add("error");
@@ -114,7 +109,6 @@ async function checkDocument() {
     }
     
     try {
-        // Fetch database from GitHub
         const response = await fetch('database.txt?t=' + new Date().getTime());
         if (!response.ok) throw new Error("Could not load database file.");
         
@@ -122,12 +116,9 @@ async function checkDocument() {
         const lines = textData.split('\n');
         const recordDatabase = [];
         
-        // Parse database lines split by '|'
         lines.forEach(line => {
             if(line.includes('|')) {
                 let parts = line.split('|');
-                
-                // Read tracking number from DB, strip non-digits, and REMOVE leading zeros for clean matching
                 let dbTracking = parts[0] ? parts[0].trim().replace(/\D/g, '').replace(/^0+/, '') : '';
                 
                 recordDatabase.push({
@@ -139,13 +130,10 @@ async function checkDocument() {
             }
         });
 
-        // --- SEARCH FILTERING LOGIC ---
         let matches = [];
 
         if (trackingNum) {
-            // Filter by tracking number (zeros stripped on both sides)
             matches = recordDatabase.filter(record => record.tracking === trackingNum);
-            
             if (lastName) {
                 matches = matches.filter(record => record.lastName === lastName);
             }
@@ -156,11 +144,9 @@ async function checkDocument() {
             matches = recordDatabase.filter(record => record.dob === dob && record.lastName === lastName);
         }
 
-        // --- DISPLAY RESULTS ---
+        // --- FIXED SUCCESS MESSAGE (REMOVED NAMES) ---
         if (matches.length > 0) {
-            let formattedNames = matches.map(r => (r.firstName + " " + r.lastName).trim()).join(' & ');
-            
-            resultDiv.innerHTML = "✓ Match Found (<span class='name-highlight'>" + formattedNames + "</span>): Document ready for collection.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + formattedNames + "</span>) جاهزة لدى المصالح القنصلية</span>";
+            resultDiv.innerHTML = "✓ Match Found: Your Document ready for collection.<span class='arabic-text'>الوثيقة البيومترية الخاصة بك جاهزة لدى المصالح القنصلية</span>";
             resultDiv.classList.add("success");
         } else {
             resultDiv.innerHTML = "✗ Not Found: Document not available based on your search inputs.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة بناءً على معطيات البحث</span>";
