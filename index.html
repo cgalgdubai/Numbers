@@ -25,10 +25,17 @@
             font-size: 20px;
             letter-spacing: 0.5px;
         }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #444;
+            font-size: 14px;
+        }
         input[type="text"] {
             width: 100%;
             padding: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
@@ -44,6 +51,7 @@
             font-size: 16px;
             cursor: pointer;
             font-weight: bold;
+            margin-top: 5px;
         }
         button:hover { background-color: #0056b3; }
         .result-message { margin-top: 15px; padding: 12px; border-radius: 4px; font-size: 14px; display: none; line-height: 1.5; }
@@ -58,61 +66,101 @@
 
 <div class="search-container">
     <h2>Biometric Passport Tracking</h2>
-    <input type="text" id="numberInput" placeholder="e.g., 0012345 or 01011990" autocomplete="off">
-    <button onclick="checkNumber()">Verify Your Document</button>
+    
+    <label for="lastNameInput">Last Name / اللقب</label>
+    <input type="text" id="lastNameInput" placeholder="e.g., AAAAA" autocomplete="off">
+
+    <label for="trackingInput">Tracking Number / رقم التسجيل</label>
+    <input type="text" id="trackingInput" placeholder="e.g., 25012020" autocomplete="off">
+
+    <label for="dobInput">Date of Birth / تاريخ الميلاد</label>
+    <input type="text" id="dobInput" placeholder="e.g., 15041995 (DDMMYYYY)" autocomplete="off">
+
+    <button onclick="checkDocument()">Verify Your Document</button>
     <div id="resultMessage" class="result-message"></div>
 </div>
 
 <script>
-async function checkNumber() {
-    let userInput = document.getElementById("numberInput").value.trim();
-    
-    // Convert Arabic numerals (٠١٢٣٤٥٦٧٨٩)
-    userInput = userInput.replace(/[٠-٩]/g, function (d) {
+// Helper function to convert Arabic numerals and strip non-digits
+function cleanNumericInput(inputVal) {
+    let converted = inputVal.replace(/[٠-٩]/g, function (d) {
         return d.charCodeAt(0) - 1632;
     });
+    return converted.replace(/\D/g, '');
+}
+
+async function checkDocument() {
+    let lastName = document.getElementById("lastNameInput").value.trim().toUpperCase();
+    let trackingNum = cleanNumericInput(document.getElementById("trackingInput").value.trim());
+    let dob = cleanNumericInput(document.getElementById("dobInput").value.trim());
 
     let resultDiv = document.getElementById("resultMessage");
     resultDiv.innerHTML = "";
     resultDiv.className = "result-message";
     
-    if (userInput === "") {
-        resultDiv.innerHTML = "Please enter a number. / الرجاء إدخال الرقم";
+    // --- VALIDATION LOGIC ---
+    if (!trackingNum && !dob) {
+        resultDiv.innerHTML = "Please enter either a Tracking Number or Date of Birth.<br>الرجاء إدخال إما رقم التسجيل أو تاريخ الميلاد.";
+        resultDiv.classList.add("error");
+        return;
+    }
+
+    if (dob && !lastName) {
+        resultDiv.innerHTML = "Last Name is mandatory when searching by Date of Birth.<br>اللقب إلزامي عند البحث باستخدام تاريخ الميلاد.";
         resultDiv.classList.add("error");
         return;
     }
     
-    // Kept only \D to strip non-numeric text, but REMOVED leading zeros deletion
-    let cleanedInput = userInput.replace(/\D/g, '');
-    
     try {
-        // Fetch the TXT file directly from your GitHub directory
+        // Fetch database from GitHub
         const response = await fetch('database.txt?t=' + new Date().getTime());
         if (!response.ok) throw new Error("Could not load database file.");
         
         const textData = await response.text();
-        
-        const numberDatabase = {};
         const lines = textData.split('\n');
+        const recordDatabase = [];
         
+        // Parse database lines split by '|'
         lines.forEach(line => {
-            if(line.includes('=')) {
-                let parts = line.split('=');
-                let num = parts[0].trim(); // Leading zeros are kept exactly as typed in the file
-                let name = parts[1].trim();
-                if(num) {
-                    numberDatabase[num] = name;
-                }
+            if(line.includes('|')) {
+                let parts = line.split('|');
+                recordDatabase.push({
+                    tracking: parts[0] ? parts[0].trim() : '',
+                    dob: parts[1] ? parts[1].trim() : '',
+                    lastName: parts[2] ? parts[2].trim().toUpperCase() : '',
+                    firstName: parts[3] ? parts[3].trim().toUpperCase() : ''
+                });
             }
         });
 
-        // Exact match comparison (including zeros)
-        if (cleanedInput in numberDatabase) {
-            let personName = numberDatabase[cleanedInput];
-            resultDiv.innerHTML = "✓ Match Found for <b>" + userInput + "</b> (<span class='name-highlight'>" + personName + "</span>): Document ready for collection.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + personName + "</span>) جاهزة لدى المصالح القنصلية</span>";
+        // --- SEARCH FILTERING LOGIC ---
+        let matches = [];
+
+        if (trackingNum) {
+            // Rule 1: If tracking number is entered, it handles the search primarily. 
+            // If they also optionally filled DOB or Last Name, we filter by those too to guarantee accuracy.
+            matches = recordDatabase.filter(record => record.tracking === trackingNum);
+            
+            if (lastName) {
+                matches = matches.filter(record => record.lastName === lastName);
+            }
+            if (dob) {
+                matches = matches.filter(record => record.dob === dob);
+            }
+        } else if (dob && lastName) {
+            // Rule 2: If no tracking number, search strictly using BOTH DOB and Last Name
+            matches = recordDatabase.filter(record => record.dob === dob && record.lastName === lastName);
+        }
+
+        // --- DISPLAY RESULTS ---
+        if (matches.length > 0) {
+            // Combine all names found into a single string (e.g., " ")
+            let formattedNames = matches.map(r => (r.firstName + " " + r.lastName).trim()).join(' & ');
+            
+            resultDiv.innerHTML = "✓ Match Found (<span class='name-highlight'>" + formattedNames + "</span>): Document ready for collection.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + formattedNames + "</span>) جاهزة لدى المصالح القنصلية</span>";
             resultDiv.classList.add("success");
         } else {
-            resultDiv.innerHTML = "✗ Not Found <b>" + userInput + "</b>: Document not available.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة لدى المصالح القنصلية</span>";
+            resultDiv.innerHTML = "✗ Not Found: Document not available based on your search inputs.<span class='arabic-text'>الوثيقة البيومترية غير جاهزة بناءً على معطيات البحث</span>";
             resultDiv.classList.add("fail");
         }
 
