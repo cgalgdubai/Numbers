@@ -68,10 +68,10 @@
     <h2>Biometric Passport Tracking</h2>
     
     <label for="lastNameInput">Last Name / اللقب</label>
-    <input type="text" id="lastNameInput" placeholder="e.g., AAAAA" autocomplete="off">
+    <input type="text" id="lastNameInput" placeholder="e.g., aaaa" autocomplete="off">
 
     <label for="trackingInput">Tracking Number / رقم التسجيل</label>
-    <input type="text" id="trackingInput" placeholder="e.g., 25012020" autocomplete="off">
+    <input type="text" id="trackingInput" placeholder="e.g., 23012026" autocomplete="off">
 
     <label for="dobInput">Date of Birth / تاريخ الميلاد</label>
     <input type="text" id="dobInput" placeholder="e.g., 15041995 (DDMMYYYY)" autocomplete="off">
@@ -91,7 +91,9 @@ function cleanNumericInput(inputVal) {
 
 async function checkDocument() {
     let lastName = document.getElementById("lastNameInput").value.trim().toUpperCase();
-    let trackingNum = cleanNumericInput(document.getElementById("trackingInput").value.trim());
+    
+    // Clean numeric inputs and REMOVE leading zeros from the user's tracking input
+    let trackingNum = cleanNumericInput(document.getElementById("trackingInput").value.trim()).replace(/^0+/, '');
     let dob = cleanNumericInput(document.getElementById("dobInput").value.trim());
 
     let resultDiv = document.getElementById("resultMessage");
@@ -124,8 +126,12 @@ async function checkDocument() {
         lines.forEach(line => {
             if(line.includes('|')) {
                 let parts = line.split('|');
+                
+                // Read tracking number from DB, strip non-digits, and REMOVE leading zeros for clean matching
+                let dbTracking = parts[0] ? parts[0].trim().replace(/\D/g, '').replace(/^0+/, '') : '';
+                
                 recordDatabase.push({
-                    tracking: parts[0] ? parts[0].trim() : '',
+                    tracking: dbTracking,
                     dob: parts[1] ? parts[1].trim() : '',
                     lastName: parts[2] ? parts[2].trim().toUpperCase() : '',
                     firstName: parts[3] ? parts[3].trim().toUpperCase() : ''
@@ -137,8 +143,7 @@ async function checkDocument() {
         let matches = [];
 
         if (trackingNum) {
-            // Rule 1: If tracking number is entered, it handles the search primarily. 
-            // If they also optionally filled DOB or Last Name, we filter by those too to guarantee accuracy.
+            // Filter by tracking number (zeros stripped on both sides)
             matches = recordDatabase.filter(record => record.tracking === trackingNum);
             
             if (lastName) {
@@ -148,13 +153,11 @@ async function checkDocument() {
                 matches = matches.filter(record => record.dob === dob);
             }
         } else if (dob && lastName) {
-            // Rule 2: If no tracking number, search strictly using BOTH DOB and Last Name
             matches = recordDatabase.filter(record => record.dob === dob && record.lastName === lastName);
         }
 
         // --- DISPLAY RESULTS ---
         if (matches.length > 0) {
-            // Combine all names found into a single string (e.g., " ")
             let formattedNames = matches.map(r => (r.firstName + " " + r.lastName).trim()).join(' & ');
             
             resultDiv.innerHTML = "✓ Match Found (<span class='name-highlight'>" + formattedNames + "</span>): Document ready for collection.<span class='arabic-text'>الوثيقة البيومترية الخاصة بـ (<span class='name-highlight'>" + formattedNames + "</span>) جاهزة لدى المصالح القنصلية</span>";
